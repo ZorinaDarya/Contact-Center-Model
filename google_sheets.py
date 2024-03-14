@@ -62,3 +62,16 @@ def get_IDENT_telephony():
     except Exception as e:
         print('Error "Проблема при чтении телефонии из IDENT" ', str(e))
         return None
+
+
+def update_tasks_cur(df):
+    CREDENTIALS_FILE = 'wa-bot-372214-f479a48fa726.json'
+    try:
+        gc = pygsheets.authorize(service_file=CREDENTIALS_FILE)
+        sh = gc.open(GS_NAME)
+        wks = sh.worksheet_by_title('Лист8')
+        wks.set_dataframe(df, (1, 1), encoding='utf-8', fit=True)
+    except Exception as e:
+        print('Error "Проблема при записи промежуточных данных в таблицу" ', str(e))
+        return None
+
