@@ -1,6 +1,7 @@
 from comagic import get_telephony
 from google_sheets import get_matrices, get_break_schedule, get_available_groups
 from data_transformation import matrix_to_df, available_groups_matrix_to_df, input_data_classification
+from models import Model
 
 
 def init_matrices():
@@ -23,13 +24,10 @@ def init_input_data():
 
 def init_model():
     classifier = init_matrices()
-    print(classifier)
     schedule = get_break_schedule()
-    print(schedule)
     available_groups = init_available_groups_matrix()
-    print(available_groups)
     input_data = init_input_data()
-    print(input_data)
 
+    model = Model(input_data, classifier, available_groups, schedule)
 
-init_input_data()
+    return model

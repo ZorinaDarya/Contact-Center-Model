@@ -92,7 +92,7 @@ def get_telephony():
     calls = get_calls(access_token)
     messages = get_message(access_token)
 
-    df = DataFrame(columns=['Тип события', 'ID', 'Дата и время', 'Телефон', 'Ожидание', 'Разговор'])
+    df = DataFrame(columns=['Факт', 'ID', 'Дата и время', 'Телефон', 'Ожидание', 'Разговор'])
 
     for i in range(len(calls)):
         if calls[i]["direction"] == "in" and not calls[i]["virtual_phone_number"] in PRE_CALL:

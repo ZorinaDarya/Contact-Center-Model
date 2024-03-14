@@ -46,3 +46,4 @@ AVAILABLE_ACTIONS_SELECTION_MODE = 'TIME'  # 'FREE_OPERATOR'
 
 DATE = datetime.date(2024, 2, 29)
 
+GS_NAME = 'ТЗ для модели'

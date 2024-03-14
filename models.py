@@ -1,22 +1,41 @@
 import pandas as pd
+from pandas import DataFrame
 
 
-class IncomingCall:
+class Model:
+    def __init__(self, classifier, schedule, available_groups, input_data):
+        self.input_data = input_data
+        self.classifier = classifier
+        self.available_groups = available_groups
+        self.schedule = schedule
+        self.tasks = DataFrame(columns=[
+            'Факт', 'ID', 'Дата и время', 'Телефон', 'Ожидание', 'Разговор',
 
-    def __init__(self, id, start_at, pat_phone, cc_phone, category, wait, talk):
-        self.title = title
-        self.description = description
+            'Тип',
+            # Сейчас заглушка
+            'Номер звонка',
+            # Только у пропущенных
+            'Длительность дозвона',
 
-    def __iter__(self):
-        for attr_name in self.__dict__:
-            yield getattr(self, attr_name)
+            # Входящий, Пропущенный, Заявка, Исходящий
+            'Тип задачи',
+            # Да, Нет, В процессе
+            'Обработана',
+            # Определяются по матрице
+            'Приоритет', 'Группа'
+        ])
+        self.action = DataFrame(columns=[
+            'Тип задачи',
+            'ID Задачи',
+            # Для пропущенного - время окончания звонка, для входящего - время начала звонка
+            'Дата и время',
 
-
-if __name__ == '__main__':
-
-    site_1 = URL_2(title='Купить телевизор', description='Телевизоры по низкой цене')
-    site_2 = URL_2(title='Услуги юриста', description='Адвокат спешит к вам')
-
-    df = pd.DataFrame([site_1, site_2])
-    df.columns = site_1.__dict__
-    print(df)
+            # Для входящего только тип
+            'Тип', 'Номер звонка', 'Длительность дозвона',
+            'Оператор',
+            # Звонок, Обед
+            'Действие',
+            'Начало предобработки', 'Конец предобработки',
+            'Начало звонка', 'Конец звонка',
+            'Начало постобработки', 'Конец постобработки'
+        ])

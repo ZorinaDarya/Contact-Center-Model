@@ -1,8 +1,8 @@
 import numpy as np
 from pandas import DataFrame
 
-from markup_functions import call_number_classification, type_classification, wait_calculation, \
-    talk_calculation
+from google_sheets import get_IDENT_telephony
+from markup_functions import type_classification, wait_calculation, talk_calculation
 
 
 def matrix_to_df(matrices):
@@ -17,16 +17,16 @@ def matrix_to_df(matrices):
         else:
             for j in range(3, len(matrix)):
                 if i == 'Входящий':
-                    row = [i, matrix[j][0], matrix[j][1], matrix[j][2], '', '',
-                         matrices[0][j][3], matrices[1][j][3], matrices[2][j][3], matrices[3][j][3]]
+                    row = [i, matrix[j][0], '', '', '', '',
+                           matrices[0][j][3], matrices[1][j][3], matrices[2][j][3], matrices[3][j][3]]
                     df.loc[len(df.index)] = row
                 else:
                     for start, end, k in zip(matrix[1][4:9], matrix[2][4:9],
                                              [i for i in range(4, 4 + len(matrix[1][4:9]))]):
-                        row = [i, matrix[j][0], matrix[j][1], matrix[j][2], start, end,
-                             matrices[0][j][k], matrices[1][j][k], matrices[2][j][k], matrices[3][j][k]]
+                        row = [i, matrix[j][0], matrix[j][1], '', start, end,
+                               matrices[0][j][k], matrices[1][j][k], matrices[2][j][k], matrices[3][j][k]]
                         df.loc[len(df.index)] = row
-
+    df = df.drop_duplicates()
     return df
 
 
@@ -41,11 +41,13 @@ def available_groups_matrix_to_df(df):
 
 
 def input_data_classification(df):
+    df_ident = get_IDENT_telephony()
+
+    df['Тип'] = df.apply(type_classification, axis=1, ident=df_ident)
+    df['Номер звонка'] = ''
+    df['Длительность дозвона'] = ''
+
     df['Ожидание'] = df.apply(wait_calculation, axis=1)
     df['Разговор'] = df.apply(talk_calculation, axis=1)
 
-    df['Тип'] = df.apply(type_classification, axis=1)
-    df['Номер звонка'] = df.apply(call_number_classification, axis=1)
-
     return df
-
