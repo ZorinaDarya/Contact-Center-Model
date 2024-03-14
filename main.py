@@ -1,5 +1,7 @@
 import datetime
 import warnings
+
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
@@ -63,14 +65,14 @@ def update_tasks(moment):
 if __name__ == '__main__':
     a0 = datetime.datetime.now()
     start_point = datetime.datetime.combine(DATE, datetime.time(9, 0, 0))
-    end_point = datetime.datetime.combine(DATE, datetime.time(10, 0, 0))
+    end_point = datetime.datetime.combine(DATE, datetime.time(21, 0, 0))
     cur_time = start_point
 
     model = init_model()
     # Добавление пропущенных в нерабочее время в список задач
     missed_calls_in_not_working_time(cur_time)
     a1 = datetime.datetime.now()
-    while cur_time <= end_point:
+    while cur_time < end_point:
         a2 = datetime.datetime.now()
 
         # Определение какие события перешли в задачи
@@ -81,11 +83,19 @@ if __name__ == '__main__':
         # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
 
         # По всем активным задачам пройтись: выбрать задачу, определить доступна ли группа, создать действие,
-        # заполнить действие, изменить статус задачи
+        # заполнить действие, изменить статус задачи, если есть еще
+        # необработанный пропущенный с одного номера, то этот пропущенный уходит в архив
 
         # Сбор статистики
 
-        cur_time += datetime.timedelta(seconds=1)
+        try:
+            cur_time = min([model.incoming_application_flow[model.incoming_application_flow['Дата и время'] >
+                                                            cur_time].iloc[0]['Дата и время'],
+                            end_point if pd.isnull(model.operators['Время ближайшего освобождения'].min())
+                            else model.operators['Время ближайшего освобождения'].min(),
+                            datetime.datetime.combine(DATE, datetime.time(cur_time.hour + 1, 0, 0))])
+        except:
+            cur_time = end_point
         print(cur_time, datetime.datetime.now() - a2)
 
     a3 = datetime.datetime.now()

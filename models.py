@@ -43,8 +43,8 @@ class Model:
         ])
         self.operators = DataFrame(columns=[
             # Свободен, Постобработка, Предобработка входящего, Предобработка, Звонок, Обед
-            'Номер', 'Статус', 'Время последнего освобождения'
+            'Номер', 'Статус', 'Время последнего освобождения', 'Время ближайшего освобождения'
         ])
         for i in range(OPERATOR_COUNT):
-            row = [i + 1, 'Свободен', datetime.datetime.combine(DATE, datetime.time(9, 0, 0))]
+            row = [i + 1, 'Свободен', datetime.datetime.combine(DATE, datetime.time(9, 0, 0)), None]
             self.operators.loc[len(self.operators.index)] = row
