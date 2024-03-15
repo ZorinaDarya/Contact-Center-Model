@@ -41,6 +41,13 @@ def get_available_groups():
         wks = sh.worksheet_by_title('Матрица доступных групп')
         df = pd.DataFrame(wks.get_all_records())
         df.head()
+        df['Понедельник'] = df['Понедельник'].astype(int)
+        df['Вторник'] = df['Вторник'].astype(int)
+        df['Среда'] = df['Среда'].astype(int)
+        df['Четверг'] = df['Четверг'].astype(int)
+        df['Пятница'] = df['Пятница'].astype(int)
+        df['Суббота'] = df['Суббота'].astype(int)
+        df['Воскресенье'] = df['Воскресенье'].astype(int)
         return df
     except Exception as e:
         print('Error "Проблема при чтении матрицы доступных групп по времени" ', str(e))
@@ -64,12 +71,12 @@ def get_IDENT_telephony():
         return None
 
 
-def update_tasks_cur(df):
+def update_tasks_cur(df, sheet_name):
     CREDENTIALS_FILE = 'wa-bot-372214-f479a48fa726.json'
     try:
         gc = pygsheets.authorize(service_file=CREDENTIALS_FILE)
         sh = gc.open(GS_NAME)
-        wks = sh.worksheet_by_title('Лист8')
+        wks = sh.worksheet_by_title(sheet_name)
         wks.set_dataframe(df, (1, 1), encoding='utf-8', fit=True)
     except Exception as e:
         print('Error "Проблема при записи промежуточных данных в таблицу" ', str(e))

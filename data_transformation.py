@@ -9,13 +9,13 @@ from markup_functions import type_classification, wait_calculation, talk_calcula
 def matrix_to_df(matrices):
     matrix = matrices[0]
     df = DataFrame(columns=['Направление', 'Тип', 'Длительность дозвона', 'Номер звонка', 'Начало', 'Конец',
-                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия'])
+                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия', 'Количество'])
 
     for i in ['Пропущенный', 'Входящий', 'Исходящий']:
         if i == 'Исходящий':
             row = DataFrame([[i, None, None, None, None, None,
                              int(matrices[0][2][9]), int(matrices[1][2][9]),
-                             float(matrices[2][2][9].replace(",", ".")), float(matrices[3][2][9].replace(",", "."))]]
+                             float(matrices[2][2][9].replace(",", ".")), float(matrices[3][2][9].replace(",", ".")), 0]]
                             , columns=df.columns)
             # df.loc[len(df.index)] = row
             df = pd.concat([df, row])
@@ -25,16 +25,16 @@ def matrix_to_df(matrices):
                     row = DataFrame([[i, matrix[j][0], None, None, None, None,
                                      int(matrices[0][j][3]), int(matrices[1][j][3]),
                                      float(matrices[2][j][3].replace(",", ".")),
-                                     float(matrices[3][j][3].replace(",", "."))]], columns=df.columns)
+                                     float(matrices[3][j][3].replace(",", ".")), 0]], columns=df.columns)
                     # df.loc[len(df.index)] = row
                     df = pd.concat([df, row])
                 else:
                     for start, end, k in zip(matrix[1][4:9], matrix[2][4:9],
                                              [i for i in range(4, 4 + len(matrix[1][4:9]))]):
-                        row = DataFrame([[i, matrix[j][0], matrix[j][1], None, float(start), float(end),
+                        row = DataFrame([[i, matrix[j][0], matrix[j][1], None, float(start) * 60, float(end) * 60,
                                          int(matrices[0][j][k]), int(matrices[1][j][k]),
                                          float(matrices[2][j][k].replace(",", ".")),
-                                         float(matrices[3][j][k].replace(",", "."))]], columns=df.columns)
+                                         float(matrices[3][j][k].replace(",", ".")), 0]], columns=df.columns)
                         # df.loc[len(df.index)] = row
                         df = pd.concat([df, row])
     df = df.drop_duplicates()
@@ -43,8 +43,8 @@ def matrix_to_df(matrices):
 
 def available_groups_matrix_to_df(df):
     column_name = 'Интервал'
-    df.insert(loc=0, column='Начало', value=df[column_name].str.extract(r'(^\d+)'))
-    df.insert(loc=1, column='Конец', value=df[column_name].str.extract(r' (\d+)'))
+    df.insert(loc=0, column='Начало', value=df[column_name].str.extract(r'(^\d+)').astype(int))
+    df.insert(loc=1, column='Конец', value=df[column_name].str.extract(r' (\d+)').astype(int))
 
     del df[column_name]
 

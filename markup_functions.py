@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE
+from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE, AVAILABLE_ACTIONS_SELECTION_MODE
 
 
 def wait_calculation(row):
@@ -78,8 +78,18 @@ def get_action_class(row, classifier, moment, param):
     return val
 
 
-def call_number_classification(row):
+def get_sorted_tasks(df, moment):
+    df = df.sort_values('Дата и время')
+    callback_time = (moment - max(df.iloc[0]['Дата и время'] + datetime.timedelta(seconds=df.iloc[0]['Ожидание']),
+                                  datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+    if df.iloc[0]['Тип задачи'] == 'Пропущенный' and callback_time >= 5 * 60:
+        val = df.iloc[-1]
+    else:
+        val = df.iloc[0]
+    return val
 
+
+def call_number_classification(row):
     return None
 
 
@@ -94,3 +104,22 @@ def type_classification(row, ident):
         # print('Warning "Не нашлось такого звонка в IDENT"\n', row, str(e))
         ident_type = 'Хочет записаться.'
     return ident_type
+
+
+def check_group(row, model, moment):
+    available_group_number = 0
+    if AVAILABLE_ACTIONS_SELECTION_MODE == 'TIME':
+        available_group_numbers = model.available_groups[(model.available_groups['Начало'] <= moment.hour) &
+                                                         (model.available_groups['Конец'] > moment.hour)]
+        available_group_number = available_group_numbers.iloc[0, moment.weekday()]
+    elif AVAILABLE_ACTIONS_SELECTION_MODE == 'FREE_OPERATOR':
+        free_operators = model.operators[model.operators['Статус'] == 'Свободен']
+        if free_operators.empty:
+            available_group_number = 0
+        else:
+            available_group_number = free_operators.shape[0]
+    if row['Группа'] > available_group_number:
+        val = False
+    else:
+        val = True
+    return val
