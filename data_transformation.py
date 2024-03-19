@@ -62,3 +62,8 @@ def input_data_classification(df):
     df['Разговор'] = df.apply(talk_calculation, axis=1)
 
     return df
+
+
+
+
+

@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE, AVAILABLE_ACTIONS_SELECTION_MODE
+from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE, AVAILABLE_ACTIONS_SELECTION_MODE, OPERATOR_COUNT
 
 
 def wait_calculation(row):
@@ -36,7 +36,7 @@ def change_task_type(row, moment):
 
 
 def wait_duration_class(row):
-    if row['Тип задачи'] == 'Пропущенный' and row['Длительность дозвона'] is None:
+    if row['Тип задачи'] == 'Пропущенный' and pd.isnull(row['Длительность дозвона']):
         if row['Ожидание'] < 5:
             val = '0 - 5'
         elif row['Ожидание'] >= 20:
@@ -123,3 +123,19 @@ def check_group(row, model, moment):
     else:
         val = True
     return val
+
+
+def get_operator_break(num, moment, schedule):
+    breaks = schedule[(schedule['Перерыв'].str.contains('Сотрудник ' + str(num + 1))) &
+                      (schedule[str(OPERATOR_COUNT) + ' конец'] > moment) &
+                      (schedule[str(OPERATOR_COUNT) + ' начало'] <= moment) &
+                      (pd.notnull(schedule[str(OPERATOR_COUNT) + ' начало']))]
+    if breaks.empty:
+        val = False
+        end_time = None
+    else:
+        val = True
+        end_time = breaks.iloc[0][str(num + 1) + ' конец']
+
+    return val, end_time
+

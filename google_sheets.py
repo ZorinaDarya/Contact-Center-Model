@@ -27,6 +27,11 @@ def get_break_schedule():
         wks = sh.worksheet_by_title('График перерывов КЦ')
         df = pd.DataFrame(wks.get_all_records())
         df.head()
+        for i in range(10):
+            df[str(i + 1) + ' начало'] = pd.to_datetime(DATE.strftime('%d.%m.%Y ') + df[str(i + 1) + ' начало'],
+                                                        format='%d.%m.%Y %H:%M:%S', errors='coerce')
+            df[str(i + 1) + ' конец'] = pd.to_datetime(DATE.strftime('%d.%m.%Y ') + df[str(i + 1) + ' конец'],
+                                                       format='%d.%m.%Y %H:%M:%S', errors='coerce')
         return df
     except Exception as e:
         print('Error "Проблема при чтении графика перерывов КЦ" ', str(e))
