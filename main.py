@@ -49,7 +49,7 @@ def check_incoming_application_flow(moment):
                            row['Тип'],
                            row['Номер звонка'],
                            None,
-                           'Входящий' if row['Факт'] != 'Заявка' else row['Факт'],
+                           'Входящий' if row['Факт'] != 'Заявка' else 'Заявка',
                            'Нет',
                            None,
                            None]], columns=model.tasks.columns)
@@ -68,7 +68,7 @@ def update_tasks(moment):
 
 def get_new_task(moment):
     unprocessed_tasks = model.tasks[(model.tasks['Обработана'] == 'Нет') &
-                                    (model.tasks['Тип задачи'] != 'Заявка') &
+                                    # (model.tasks['Тип задачи'] != 'Заявка') &
                                     (model.tasks['Тип'] != 'Прочее')]
     active_tasks = unprocessed_tasks[unprocessed_tasks['Приоритет'] == unprocessed_tasks['Приоритет'].min()]
     if not active_tasks.empty:
@@ -94,7 +94,7 @@ def end_actions(moment):
                                                  (model.actions['Начало звонка'] > moment)]
     for index, row in preprocessing_incoming_calls.iterrows():
         task = model.tasks[model.tasks['ID'] == row['ID Задачи']].iloc[0]
-        if task['Дата и время'] + datetime.timedelta(seconds=task['Ожидание']) < row['Начало звонка']:
+        if task['Дата и время'] + datetime.timedelta(seconds=int(task['Ожидание'])) < row['Начало звонка']:
             model.actions.loc[(model.actions['ID Задачи'] == row['ID Задачи']) &
                               (pd.isnull(model.actions['Дата и время прерывания'])) &
                               (model.actions['Конец постобработки'] == row['Конец постобработки']), 'Завершена'] = 'Да'
@@ -120,13 +120,14 @@ def end_actions(moment):
         model.operators.loc[model.operators['Номер'] == row['Оператор'], 'Время ближайшего освобождения'] = None
 
         if row['Действие'] != 'Обед':
+            # if row['Тип задачи'] != 'Исходящий':
             model.tasks.loc[model.tasks['ID'] == row['ID Задачи'], 'Обработана'] = 'Да'
 
             direction = row['Тип задачи'] if row['Тип задачи'] != 'Заявка' else 'Пропущенный'
             wait_duration = row['Длительность дозвона']
-            callback_time = (row['Начало звонка'] - max(row['Дата и время'] +
-                                                        datetime.timedelta(seconds=row['Ожидание']),
-                                                        datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+            callback_time = (row['Начало звонка'] -
+                             max(row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])),
+                                 datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
             if direction == 'Пропущенный':
                 model.classifier.loc[(model.classifier['Направление'] == direction) &
                                      (model.classifier['Тип'] == row['Тип']) &
@@ -190,6 +191,7 @@ def assign_tasks(moment):
                 ]], columns=model.actions.columns)
                 model.actions = pd.concat([model.actions, action])
 
+                # if new_task['Тип задачи'] != 'Исходящий':
                 model.tasks.loc[model.tasks['ID'] == new_task['ID'], 'Обработана'] = 'В процессе'
                 model.operators.loc[model.operators['Номер'] == index + 1, 'Статус'] = 'Задача'
                 model.operators.loc[model.operators['Номер'] == index + 1, 'Время ближайшего освобождения'] = \
@@ -209,6 +211,8 @@ if __name__ == '__main__':
     a1 = datetime.datetime.now()
     while cur_time < end_point:
         a2 = datetime.datetime.now()
+        if cur_time == datetime.datetime.combine(DATE, datetime.time(9, 41, 35)):
+            pass
 
         # Определение какие события перешли в задачи
         check_incoming_application_flow(cur_time)
@@ -250,15 +254,15 @@ if __name__ == '__main__':
             cur_time = min([end_point if pd.isnull(model.operators[model.operators['Статус'] != 'Свободен']
                                                    ['Время ближайшего освобождения'].min(skipna=True))
                             else model.operators[model.operators['Статус'] != 'Свободен']
-                            ['Время ближайшего освобождения'].min(skipna=True)])
+            ['Время ближайшего освобождения'].min(skipna=True)])
         except:
             cur_time = end_point
         print(cur_time, datetime.datetime.now() - a2)
 
-
     # Сбор статистики
 
     a3 = datetime.datetime.now()
+    update_tasks_cur(model.incoming_application_flow, 'Входные данные')
     update_tasks_cur(model.tasks, 'Задачи')
     update_tasks_cur(model.classifier, 'Классификатор')
     update_tasks_cur(model.actions, 'Действия')
@@ -267,3 +271,7 @@ if __name__ == '__main__':
     print('Загрузка входных данных: ', a1 - a0)
     print('Выполнение процесса: ', a3 - a1)
     print('Запись результатов: ', a4 - a3)
+    model.tasks['Ожидание'] = model.tasks['Ожидание'].astype(int)
+
+    model.get_statistic(start_point, end_point)
+    update_tasks_cur(model.statistic, 'Выходные параметры')

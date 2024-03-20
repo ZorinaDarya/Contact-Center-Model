@@ -12,7 +12,7 @@ def get_matrices():
         wks = sh.worksheet_by_title('Матрицы')
 
         # Матрица групп (аналог цветов), Матрица приоритетов, Матрица вероятности дозвона, Матрица конверсии в запись
-        values = wks.get_values_batch(ranges=['A3:J17', 'A21:J35', 'A39:J53', 'A76:J90'])
+        values = wks.get_values_batch(ranges=['A3:J17', 'A21:J35', 'A39:J53', 'A76:J90', 'A94:J108'])
         return values
     except Exception as e:
         print('Error "Проблема при чтении матриц настроек" ', str(e))

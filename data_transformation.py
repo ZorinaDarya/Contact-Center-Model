@@ -9,13 +9,16 @@ from markup_functions import type_classification, wait_calculation, talk_calcula
 def matrix_to_df(matrices):
     matrix = matrices[0]
     df = DataFrame(columns=['Направление', 'Тип', 'Длительность дозвона', 'Номер звонка', 'Начало', 'Конец',
-                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия', 'Количество'])
+                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия', 'Счастье', 'Количество'])
 
     for i in ['Пропущенный', 'Входящий', 'Исходящий']:
         if i == 'Исходящий':
             row = DataFrame([[i, None, None, None, None, None,
-                             int(matrices[0][2][9]), int(matrices[1][2][9]),
-                             float(matrices[2][2][9].replace(",", ".")), float(matrices[3][2][9].replace(",", ".")), 0]]
+                             int(matrices[0][1][9]),
+                              int(matrices[1][1][9]),
+                             float(matrices[2][1][9].replace(",", ".")),
+                              float(matrices[3][1][9].replace(",", ".")),
+                              int(matrices[4][1][9]), 0]]
                             , columns=df.columns)
             # df.loc[len(df.index)] = row
             df = pd.concat([df, row])
@@ -25,7 +28,8 @@ def matrix_to_df(matrices):
                     row = DataFrame([[i, matrix[j][0], None, None, None, None,
                                      int(matrices[0][j][3]), int(matrices[1][j][3]),
                                      float(matrices[2][j][3].replace(",", ".")),
-                                     float(matrices[3][j][3].replace(",", ".")), 0]], columns=df.columns)
+                                     float(matrices[3][j][3].replace(",", ".")),
+                                    int(matrices[4][j][3]), 0]], columns=df.columns)
                     # df.loc[len(df.index)] = row
                     df = pd.concat([df, row])
                 else:
@@ -34,7 +38,8 @@ def matrix_to_df(matrices):
                         row = DataFrame([[i, matrix[j][0], matrix[j][1], None, float(start) * 60, float(end) * 60,
                                          int(matrices[0][j][k]), int(matrices[1][j][k]),
                                          float(matrices[2][j][k].replace(",", ".")),
-                                         float(matrices[3][j][k].replace(",", ".")), 0]], columns=df.columns)
+                                         float(matrices[3][j][k].replace(",", ".")),
+                                        int(matrices[4][j][k]), 0]], columns=df.columns)
                         # df.loc[len(df.index)] = row
                         df = pd.concat([df, row])
     df = df.drop_duplicates()
@@ -58,8 +63,8 @@ def input_data_classification(df):
     df['Номер звонка'] = None
     # df['Длительность дозвона'] = None
 
-    df['Ожидание'] = df.apply(wait_calculation, axis=1)
-    df['Разговор'] = df.apply(talk_calculation, axis=1)
+    df['Ожидание'] = df.apply(wait_calculation, axis=1).astype(int)
+    df['Разговор'] = df.apply(talk_calculation, axis=1).astype(int)
 
     return df
 

@@ -3,11 +3,12 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE, AVAILABLE_ACTIONS_SELECTION_MODE, OPERATOR_COUNT
+from constants import PATIENT_WAITING, DURATION_INCOMING_CALL, DATE, AVAILABLE_ACTIONS_SELECTION_MODE, OPERATOR_COUNT, \
+    DEADLINE_BACK_CALL
 
 
 def wait_calculation(row):
-    if row['Факт'] != 'Взят':
+    if row['Факт'] not in ['Взят', 'Заявка']:
         val = row['Ожидание']
     else:
         val = max(PATIENT_WAITING, row['Ожидание'])
@@ -27,7 +28,7 @@ def talk_calculation(row):
 def change_task_type(row, moment):
     if row['Тип задачи'] == 'Входящий' \
             and row['Обработана'] == 'Нет' \
-            and row['Дата и время'] + datetime.timedelta(seconds=row['Ожидание']) <= moment:
+            and row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])) <= moment:
         val = 'Пропущенный'
     else:
         val = row['Тип задачи']
@@ -36,7 +37,14 @@ def change_task_type(row, moment):
 
 
 def wait_duration_class(row):
-    if row['Тип задачи'] == 'Пропущенный' and pd.isnull(row['Длительность дозвона']):
+    if row['Тип задачи'] in ['Пропущенный', 'Заявка'] and pd.isnull(row['Длительность дозвона']):
+        if row['Ожидание'] < 5:
+            val = '0 - 5'
+        elif row['Ожидание'] >= 20:
+            val = '20+'
+        else:
+            val = '5 - 20'
+    elif row['Тип задачи'] == 'Заявка':
         if row['Ожидание'] < 5:
             val = '0 - 5'
         elif row['Ожидание'] >= 20:
@@ -52,13 +60,12 @@ def wait_duration_class(row):
 def get_action_class(row, classifier, moment, param):
     if row['Обработана'] == 'Нет':
         direction = row['Тип задачи'] if row['Тип задачи'] != 'Заявка' else 'Пропущенный'
-        wait_duration = row['Длительность дозвона'] if row['Тип задачи'] != 'Заявка' else '20+'
-        callback_time = (moment - max(row['Дата и время'] + datetime.timedelta(seconds=row['Ожидание']),
-                                      datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
         if direction == 'Пропущенный':
+            callback_time = (moment - max(row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])),
+                                          datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
             task_class = classifier[(classifier['Направление'] == direction) &
                                     (classifier['Тип'] == row['Тип']) &
-                                    (classifier['Длительность дозвона'] == wait_duration) &
+                                    (classifier['Длительность дозвона'] == row['Длительность дозвона']) &
                                     (pd.isnull(classifier['Номер звонка'])) &
                                     (classifier['Начало'] <= callback_time) &
                                     (classifier['Конец'] > callback_time)]
@@ -80,10 +87,14 @@ def get_action_class(row, classifier, moment, param):
 
 def get_sorted_tasks(df, moment):
     df = df.sort_values('Дата и время')
-    callback_time = (moment - max(df.iloc[0]['Дата и время'] + datetime.timedelta(seconds=df.iloc[0]['Ожидание']),
-                                  datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
-    if df.iloc[0]['Тип задачи'] == 'Пропущенный' and callback_time >= 5 * 60:
-        val = df.iloc[-1]
+
+    if df.iloc[0]['Тип задачи'] in ['Пропущенный', 'Заявка']:
+        callback_time = (moment - max(df.iloc[0]['Дата и время'] + datetime.timedelta(seconds=int(df.iloc[0]['Ожидание'])),
+                                      datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+        if callback_time >= DEADLINE_BACK_CALL:
+            val = df.iloc[-1]
+        else:
+            val = df.iloc[0]
     else:
         val = df.iloc[0]
     return val
@@ -94,15 +105,27 @@ def call_number_classification(row):
 
 
 def type_classification(row, ident):
-    try:
-        ident_type = ident[((ident['Телефон'] == row['Телефон']) &
-                            (ident['Дата и время'] <= row['Дата и время']) &
-                            (ident['Ожидание'] == row['Ожидание']) &
-                            (ident['Длительность'] == row['Разговор']))].iloc[0]['Тип']
-    except IndexError as e:
-        # print('-----------------------------------------')
-        # print('Warning "Не нашлось такого звонка в IDENT"\n', row, str(e))
-        ident_type = 'Хочет записаться.'
+    if row['Факт'] == 'Заявка':
+        try:
+            ident_type = ident[(ident['Телефон'] == row['Телефон']) &
+                                (ident['Дата и время'] <= row['Дата и время'])].iloc[0]['Тип']
+        except IndexError as e:
+            # print('-----------------------------------------')
+            # print('Warning "Не нашлось такого звонка в IDENT"\n', row, str(e))
+            ident_type = 'Хочет записаться.'
+
+    elif row['Факт'] == 'Исходящий':
+        ident_type = None
+    else:
+        try:
+            ident_type = ident[((ident['Телефон'] == row['Телефон']) &
+                                (ident['Дата и время'] <= row['Дата и время']) &
+                                (ident['Ожидание'] == row['Ожидание']) &
+                                (ident['Длительность'] == row['Разговор']))].iloc[0]['Тип']
+        except IndexError as e:
+            # print('-----------------------------------------')
+            # print('Warning "Не нашлось такого звонка в IDENT"\n', row, str(e))
+            ident_type = 'Хочет записаться.'
     return ident_type
 
 
