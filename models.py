@@ -123,62 +123,94 @@ class Model:
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 1 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 1 * 60)].shape[0]
         count_back_call_sec_2 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 2 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 1 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 2 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 1 * 60)].shape[0]
         count_back_call_sec_3 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 3 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 2 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 3 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 2 * 60)].shape[0]
         count_back_call_sec_4 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 4 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 3 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 4 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 3 * 60)].shape[0]
         count_back_call_sec_5 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 5 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 4 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 5 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 4 * 60)].shape[0]
         count_back_call_sec_10 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 10 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 5 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 10 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 5 * 60)].shape[0]
         count_back_call_sec_20 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 20 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 10 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 20 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 10 * 60)].shape[0]
         count_back_call_sec_30 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() < 30 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 20 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 30 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 20 * 60)].shape[0]
         count_back_call_sec_last = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Пропущенный') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() >= 30 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 30 * 60)].shape[0]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_1]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_2]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_3]
@@ -207,62 +239,94 @@ class Model:
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 1 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 1 * 60)].shape[0]
         count_back_call_sec_2 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 2 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 1 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 2 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 1 * 60)].shape[0]
         count_back_call_sec_3 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 3 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 2 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 3 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 2 * 60)].shape[0]
         count_back_call_sec_4 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 4 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 3 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 4 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 3 * 60)].shape[0]
         count_back_call_sec_5 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 5 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 4 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 5 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 4 * 60)].shape[0]
         count_back_call_sec_10 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 10 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 5 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 10 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 5 * 60)].shape[0]
         count_back_call_sec_20 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 20 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 10 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 20 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 10 * 60)].shape[0]
         count_back_call_sec_30 = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() <= 30 * 60) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 20 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() < 30 * 60) &
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 20 * 60)].shape[0]
         count_back_call_sec_last = self.actions[
             (self.actions['Тип'].str.contains('Хочет записаться.')) &
             (self.actions['Тип задачи'] == 'Заявка') &
             (self.actions['Дата и время'] >= start) &
             (self.actions['Дата и время'] < end) &
-            ((self.actions['Начало звонка'] - self.actions['Дата и время']).dt.total_seconds() > 30 * 60)].shape[0]
+            ((self.actions['Начало звонка'] -
+              (self.actions['Дата и время'] +
+               pd.to_timedelta(self.actions['Ожидание'], 's'))).dt.total_seconds() >= 30 * 60)].shape[0]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_1]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_2]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_3]
@@ -277,7 +341,7 @@ class Model:
                                          DURATION_LUNCH * COUNT_LUNCH - DURATION_BREAK * COUNT_BREAK)
         actions = self.actions[(self.actions['Тип'].str.contains('Хочет записаться.')) | (self.actions['Тип'] == '')]
         actions_finished = actions[pd.isnull(actions['Дата и время прерывания'])]
-        actions_stopped =actions[pd.notnull(actions['Дата и время прерывания'])]
+        actions_stopped = actions[pd.notnull(actions['Дата и время прерывания'])]
         df_sec_in_call = (actions_finished['Начало постобработки'] -
                           actions_finished['Начало звонка']).dt.total_seconds()
         sec_in_call = df_sec_in_call.sum()

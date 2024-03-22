@@ -111,7 +111,8 @@ def end_actions(moment):
 
     preprocessing_incoming_calls = model.actions[(model.actions['Тип задачи'] == 'Входящий') &
                                                  (model.actions['Завершена'] == 'Нет') &
-                                                 (model.actions['Начало звонка'] > moment)]
+                                                 (model.actions['Начало звонка'] > moment) &
+                                                 (model.actions['Тип'] != 'Прочее')]
     for index, row in preprocessing_incoming_calls.iterrows():
         task = model.tasks[model.tasks['ID'] == row['ID Задачи']].iloc[0]
         if task['Дата и время'] + datetime.timedelta(seconds=int(task['Ожидание'])) < row['Начало звонка']:
@@ -156,9 +157,7 @@ def end_actions(moment):
                                          (model.classifier['Конец'] > callback_time), 'Количество звонков'] += 1
             elif row['Тип задачи'] == 'Заявка':
                 callback_time = (row['Начало звонка'] - max(row['Дата и время'],
-                                                            datetime.datetime.combine(DATE,
-                                                                                      datetime.time(9, 0,
-                                                                                                    0)))).total_seconds()
+                                 datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
                 if row['Дата и время'] >= datetime.datetime.combine(DATE, datetime.time(9, 0, 0)):
                     model.classifier.loc[(model.classifier['Направление'] == 'Пропущенный') &
                                          (model.classifier['Тип'] == row['Тип']) &
@@ -232,7 +231,7 @@ def assign_tasks(moment):
 if __name__ == '__main__':
     a0 = datetime.datetime.now()
     start_point = datetime.datetime.combine(DATE, datetime.time(9, 0, 0))
-    end_point = datetime.datetime.combine(DATE, datetime.time(10, 0, 0))
+    end_point = datetime.datetime.combine(DATE, datetime.time(21, 0, 0))
     cur_time = start_point
 
     model = init_model()
@@ -287,10 +286,10 @@ if __name__ == '__main__':
             cur_time = end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty \
                 else (model.operators[model.operators['Статус'] != 'Свободен']
                       ['Время ближайшего освобождения'].min(skipna=True)
-                       if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-                       min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
-                           model.operators[model.operators['Статус'] != 'Свободен']
-                           ['Время ближайшего освобождения'].min(skipna=True)))
+                      if model.actions[model.actions['Начало звонка'] > cur_time].empty else
+                      min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
+                          model.operators[model.operators['Статус'] != 'Свободен']
+                          ['Время ближайшего освобождения'].min(skipna=True)))
         except:
             cur_time = end_point
         print(cur_time, datetime.datetime.now() - a2)
