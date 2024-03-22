@@ -278,24 +278,19 @@ if __name__ == '__main__':
             cur_time = end_point
         print(cur_time, datetime.datetime.now() - a2)
 
-    while model.operators[model.operators['Статус'] != 'Свободен'].empty:
+    while not model.operators[model.operators['Статус'] != 'Свободен'].empty:
         a2 = datetime.datetime.now()
         # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
         end_actions(cur_time)
 
         try:
             cur_time = end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty \
-                else ([model.operators[model.operators['Статус'] != 'Свободен']
-                       ['Время ближайшего освобождения'].min(skipna=True)
+                else (model.operators[model.operators['Статус'] != 'Свободен']
+                      ['Время ближайшего освобождения'].min(skipna=True)
                        if model.actions[model.actions['Начало звонка'] > cur_time].empty else
                        min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
-                           model.operators[model.operators['Статус'] != 'Свободен'])
-                       ['Время ближайшего освобождения'].min(skipna=True)])
-            # cur_time = min([end_point if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-            #                 model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
-            #                 end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty
-            #                 else model.operators[model.operators['Статус'] != 'Свободен']
-            #                 ['Время ближайшего освобождения'].min(skipna=True)])
+                           model.operators[model.operators['Статус'] != 'Свободен']
+                           ['Время ближайшего освобождения'].min(skipna=True)))
         except:
             cur_time = end_point
         print(cur_time, datetime.datetime.now() - a2)
