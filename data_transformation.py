@@ -9,7 +9,8 @@ from markup_functions import type_classification, wait_calculation, talk_calcula
 def matrix_to_df(matrices):
     matrix = matrices[0]
     df = DataFrame(columns=['Направление', 'Тип', 'Длительность дозвона', 'Номер звонка', 'Начало', 'Конец',
-                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия', 'Счастье', 'Количество'])
+                            'Группа', 'Приоритет', 'Вероятность дозвона', 'Конверсия', 'Счастье',
+                            'Количество звонков', 'Количество заявок'])
 
     for i in ['Пропущенный', 'Входящий', 'Исходящий']:
         if i == 'Исходящий':
@@ -18,7 +19,7 @@ def matrix_to_df(matrices):
                               int(matrices[1][1][9]),
                              float(matrices[2][1][9].replace(",", ".")),
                               float(matrices[3][1][9].replace(",", ".")),
-                              int(matrices[4][1][9]), 0]]
+                              int(matrices[4][1][9]), 0, 0]]
                             , columns=df.columns)
             # df.loc[len(df.index)] = row
             df = pd.concat([df, row])
@@ -29,7 +30,7 @@ def matrix_to_df(matrices):
                                      int(matrices[0][j][3]), int(matrices[1][j][3]),
                                      float(matrices[2][j][3].replace(",", ".")),
                                      float(matrices[3][j][3].replace(",", ".")),
-                                    int(matrices[4][j][3]), 0]], columns=df.columns)
+                                    int(matrices[4][j][3]), 0, 0]], columns=df.columns)
                     # df.loc[len(df.index)] = row
                     df = pd.concat([df, row])
                 else:
@@ -39,7 +40,7 @@ def matrix_to_df(matrices):
                                          int(matrices[0][j][k]), int(matrices[1][j][k]),
                                          float(matrices[2][j][k].replace(",", ".")),
                                          float(matrices[3][j][k].replace(",", ".")),
-                                        int(matrices[4][j][k]), 0]], columns=df.columns)
+                                        int(matrices[4][j][k]), 0, 0]], columns=df.columns)
                         # df.loc[len(df.index)] = row
                         df = pd.concat([df, row])
     df = df.drop_duplicates()

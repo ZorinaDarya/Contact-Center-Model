@@ -25,10 +25,23 @@ def talk_calculation(row):
     return val
 
 
+def send_to_archive(row, moment):
+    if row['Тип задачи'] == 'Входящий' \
+            and row['Обработана'] == 'Нет' \
+            and row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])) <= moment \
+            and row['Тип'] == 'Прочее':
+        val = 'Архив'
+    else:
+        val = row['Обработана']
+
+    return val
+
+
 def change_task_type(row, moment):
     if row['Тип задачи'] == 'Входящий' \
             and row['Обработана'] == 'Нет' \
-            and row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])) <= moment:
+            and row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])) <= moment \
+            and row['Тип'] != 'Прочее':
         val = 'Пропущенный'
     else:
         val = row['Тип задачи']
@@ -44,7 +57,7 @@ def wait_duration_class(row):
             val = '20+'
         else:
             val = '5 - 20'
-    elif row['Тип задачи'] == 'Заявка':
+    elif row['Тип задачи'] == 'Заявка' and pd.isnull(row['Длительность дозвона']):
         if row['Ожидание'] < 5:
             val = '0 - 5'
         elif row['Ожидание'] >= 20:
@@ -59,22 +72,31 @@ def wait_duration_class(row):
 
 def get_action_class(row, classifier, moment, param):
     if row['Обработана'] == 'Нет':
-        direction = row['Тип задачи'] if row['Тип задачи'] != 'Заявка' else 'Пропущенный'
-        if direction == 'Пропущенный':
+        if row['Тип задачи'] == 'Пропущенный':
             callback_time = (moment - max(row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])),
                                           datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
-            task_class = classifier[(classifier['Направление'] == direction) &
+            task_class = classifier[(classifier['Направление'] == row['Тип задачи']) &
                                     (classifier['Тип'] == row['Тип']) &
                                     (classifier['Длительность дозвона'] == row['Длительность дозвона']) &
                                     (pd.isnull(classifier['Номер звонка'])) &
                                     (classifier['Начало'] <= callback_time) &
                                     (classifier['Конец'] > callback_time)]
-        elif direction == 'Входящий':
-            task_class = classifier[(classifier['Направление'] == direction) &
+        elif row['Тип задачи'] == 'Заявка':
+            callback_time = (moment - max(row['Дата и время'],
+                             datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+            task_class = classifier[(classifier['Направление'] == 'Пропущенный') &
                                     (classifier['Тип'] == row['Тип']) &
+                                    (classifier['Длительность дозвона'] == row['Длительность дозвона']) &
+                                    (pd.isnull(classifier['Номер звонка'])) &
+                                    (classifier['Начало'] <= callback_time) &
+                                    (classifier['Конец'] > callback_time)]
+        elif row['Тип задачи'] == 'Входящий':
+            pat_type = row['Тип'] if row['Тип'] != 'Прочее' else 'Первичный. Хочет записаться.'
+            task_class = classifier[(classifier['Направление'] == row['Тип задачи']) &
+                                    (classifier['Тип'] == pat_type) &
                                     (pd.isnull(classifier['Номер звонка']))]
         else:
-            task_class = classifier[classifier['Направление'] == direction]
+            task_class = classifier[classifier['Направление'] == row['Тип задачи']]
         try:
             val = task_class.iloc[0][param]
         except IndexError:
