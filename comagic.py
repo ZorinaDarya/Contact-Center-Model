@@ -21,9 +21,9 @@ def login():
     return access_token
 
 
-def get_calls(access_token):
-    start = str(DATE - datetime.timedelta(days=1)) + ' 21:00:00'
-    end = str(DATE) + ' 21:00:00'
+def get_calls(access_token, d):
+    start = str(DATE[d] - datetime.timedelta(days=1)) + ' 21:00:00'
+    end = str(DATE[d]) + ' 21:00:00'
     payload = {
         "jsonrpc": "2.0",
         "id": 7,
@@ -56,9 +56,9 @@ def get_calls(access_token):
     return calls
 
 
-def get_message(access_token):
-    start = str(DATE - datetime.timedelta(days=1)) + ' 21:00:00'
-    end = str(DATE) + ' 21:00:00'
+def get_message(access_token, d):
+    start = str(DATE[d] - datetime.timedelta(days=1)) + ' 21:00:00'
+    end = str(DATE[d]) + ' 21:00:00'
     payload = {
         "jsonrpc": "2.0",
         "id": 7,
@@ -87,31 +87,38 @@ def get_message(access_token):
     return calls
 
 
-def get_telephony():
+def get_telephony(d):
     access_token = login()
-    calls = get_calls(access_token)
-    messages = get_message(access_token)
+    calls = get_calls(access_token, d)
+    messages = get_message(access_token, d)
 
     df = DataFrame(columns=['Факт', 'ID', 'Дата и время', 'Телефон', 'Ожидание', 'Разговор'])
 
     for i in range(len(calls)):
-        if calls[i]["direction"] == "in" and not calls[i]["virtual_phone_number"] in PRE_CALL:
-            row = ["Пропущен" if calls[i]["last_answered_employee_full_name"] is None or calls[i]["talk_duration"] == 0
-                   else "Взят",
-                   int(calls[i]["id"]),
-                   datetime.datetime.strptime(calls[i]["start_time"], '%Y-%m-%d %H:%M:%S'),
-                   int(calls[i]["contact_phone_number"]),
-                   int(calls[i]["wait_duration"]),
-                   int(calls[i]["talk_duration"])]
-            df.loc[len(df.index)] = row
+        try:
+            if calls[i]["direction"] == "in" and not calls[i]["virtual_phone_number"] in PRE_CALL:
+                row = ["Пропущен" if calls[i]["last_answered_employee_full_name"] is None or calls[i]["talk_duration"] == 0
+                       else "Взят",
+                       int(calls[i]["id"]),
+                       datetime.datetime.strptime(calls[i]["start_time"], '%Y-%m-%d %H:%M:%S'),
+                       int(calls[i]["contact_phone_number"]),
+                       int(calls[i]["wait_duration"]),
+                       int(calls[i]["talk_duration"])]
+                df.loc[len(df.index)] = row
+        except:
+            pass
 
     for i in range(len(messages)):
-        row = ["Заявка",
-               int(messages[i]["id"]),
-               datetime.datetime.strptime(messages[i]["date_time"], '%Y-%m-%d %H:%M:%S'),
-               int(messages[i]["visitor_phone_number"]),
-               0, 0]
-        df.loc[len(df.index)] = row
+        try:
+            row = ["Заявка",
+                   int(messages[i]["id"]),
+                   datetime.datetime.strptime(messages[i]["date_time"], '%Y-%m-%d %H:%M:%S'),
+                   int(messages[i]["visitor_phone_number"]),
+                   0, 0]
+            df.loc[len(df.index)] = row
+        except:
+            pass
+
 
     df = df.sort_values('Дата и время')
 

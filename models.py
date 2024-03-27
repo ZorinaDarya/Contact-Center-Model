@@ -6,7 +6,7 @@ from constants import OPERATOR_COUNT, DATE, DURATION_PREPROCESSING_INCOMING_CALL
 
 
 class Model:
-    def __init__(self, input_data, classifier, available_groups, schedule):
+    def __init__(self, input_data, classifier, available_groups, schedule, d, oc):
         self.incoming_application_flow = input_data
         self.classifier = classifier
         self.available_groups = available_groups
@@ -52,8 +52,8 @@ class Model:
             # Свободен, Задача, Перерыв
             'Номер', 'Статус', 'Время последнего освобождения', 'Время ближайшего освобождения'
         ])
-        for i in range(OPERATOR_COUNT):
-            row = [i + 1, 'Свободен', datetime.datetime.combine(DATE, datetime.time(9, 0, 0)), None]
+        for i in range(OPERATOR_COUNT[oc]):
+            row = [i + 1, 'Свободен', datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)), None]
             self.operators.loc[len(self.operators.index)] = row
 
         self.useful_points = DataFrame(columns=['Дата и время'])
@@ -65,7 +65,7 @@ class Model:
             self.incoming_application_flow['Дата и время']
         ])
 
-        break_beginnings = self.schedule.rename(columns={str(OPERATOR_COUNT) + ' начало': 'Дата и время'})
+        break_beginnings = self.schedule.rename(columns={str(OPERATOR_COUNT[oc]) + ' начало': 'Дата и время'})
         break_beginnings = break_beginnings[pd.notnull(break_beginnings['Дата и время'])]['Дата и время']
 
         self.useful_points = pd.concat([
@@ -73,7 +73,7 @@ class Model:
             break_beginnings
         ])
 
-        break_endings = self.schedule.rename(columns={str(OPERATOR_COUNT) + ' конец': 'Дата и время'})
+        break_endings = self.schedule.rename(columns={str(OPERATOR_COUNT[oc]) + ' конец': 'Дата и время'})
         break_endings = break_endings[pd.notnull(break_endings['Дата и время'])]['Дата и время']
 
         self.useful_points = pd.concat([
@@ -84,8 +84,8 @@ class Model:
         self.useful_points = self.useful_points.sort_values('Дата и время')
         self.statistic = DataFrame(columns=['Число'])
 
-    def get_new_statistic(self, start, end):
-        self.statistic.loc[len(self.statistic.index)] = [OPERATOR_COUNT]
+    def get_new_statistic(self, start, end, oc):
+        self.statistic.loc[len(self.statistic.index)] = [OPERATOR_COUNT[oc]]
         count_input_applications = self.incoming_application_flow[
             (self.incoming_application_flow['Тип'].str.contains('Хочет записаться.')) &
             (self.incoming_application_flow['Факт'] != 'Заявка') &
@@ -337,7 +337,7 @@ class Model:
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_30]
         self.statistic.loc[len(self.statistic.index)] = [count_back_call_sec_last]
 
-        sec_schedule = OPERATOR_COUNT * ((end - start).total_seconds() -
+        sec_schedule = OPERATOR_COUNT[oc] * ((end - start).total_seconds() -
                                          DURATION_LUNCH * COUNT_LUNCH - DURATION_BREAK * COUNT_BREAK)
         actions = self.actions[(self.actions['Тип'].str.contains('Хочет записаться.')) | (self.actions['Тип'] == '')]
         actions_finished = actions[pd.isnull(actions['Дата и время прерывания'])]

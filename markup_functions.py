@@ -70,11 +70,11 @@ def wait_duration_class(row):
     return val
 
 
-def get_action_class(row, classifier, moment, param):
+def get_action_class(row, classifier, moment, param, d):
     if row['Обработана'] == 'Нет':
         if row['Тип задачи'] == 'Пропущенный':
             callback_time = (moment - max(row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])),
-                                          datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+                                          datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
             task_class = classifier[(classifier['Направление'] == row['Тип задачи']) &
                                     (classifier['Тип'] == row['Тип']) &
                                     (classifier['Длительность дозвона'] == row['Длительность дозвона']) &
@@ -83,7 +83,7 @@ def get_action_class(row, classifier, moment, param):
                                     (classifier['Конец'] > callback_time)]
         elif row['Тип задачи'] == 'Заявка':
             callback_time = (moment - max(row['Дата и время'],
-                             datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+                                          datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
             task_class = classifier[(classifier['Направление'] == 'Пропущенный') &
                                     (classifier['Тип'] == row['Тип']) &
                                     (classifier['Длительность дозвона'] == row['Длительность дозвона']) &
@@ -107,12 +107,13 @@ def get_action_class(row, classifier, moment, param):
     return val
 
 
-def get_sorted_tasks(df, moment):
+def get_sorted_tasks(df, moment, d):
     df = df.sort_values('Дата и время')
 
     if df.iloc[0]['Тип задачи'] in ['Пропущенный', 'Заявка']:
-        callback_time = (moment - max(df.iloc[0]['Дата и время'] + datetime.timedelta(seconds=int(df.iloc[0]['Ожидание'])),
-                                      datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
+        callback_time = (
+                    moment - max(df.iloc[0]['Дата и время'] + datetime.timedelta(seconds=int(df.iloc[0]['Ожидание'])),
+                                 datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
         if callback_time >= DEADLINE_BACK_CALL:
             val = df.iloc[-1]
         else:
@@ -130,7 +131,7 @@ def type_classification(row, ident):
     if row['Факт'] == 'Заявка':
         try:
             ident_type = ident[(ident['Телефон'] == row['Телефон']) &
-                                (ident['Дата и время'] <= row['Дата и время'])].iloc[0]['Тип']
+                               (ident['Дата и время'] <= row['Дата и время'])].iloc[0]['Тип']
         except IndexError as e:
             # print('-----------------------------------------')
             # print('Warning "Не нашлось такого звонка в IDENT"\n', row, str(e))
@@ -170,11 +171,11 @@ def check_group(row, model, moment):
     return val
 
 
-def get_operator_break(num, moment, schedule):
+def get_operator_break(num, moment, schedule, oc):
     breaks = schedule[(schedule['Перерыв'].str.contains('Сотрудник ' + str(num + 1))) &
-                      (schedule[str(OPERATOR_COUNT) + ' конец'] > moment) &
-                      (schedule[str(OPERATOR_COUNT) + ' начало'] <= moment) &
-                      (pd.notnull(schedule[str(OPERATOR_COUNT) + ' начало']))]
+                      (schedule[str(OPERATOR_COUNT[oc]) + ' конец'] > moment) &
+                      (schedule[str(OPERATOR_COUNT[oc]) + ' начало'] <= moment) &
+                      (pd.notnull(schedule[str(OPERATOR_COUNT[oc]) + ' начало']))]
     if breaks.empty:
         val = False
         end_time = None
@@ -183,4 +184,3 @@ def get_operator_break(num, moment, schedule):
         end_time = breaks.iloc[0][str(num + 1) + ' конец']
 
     return val, end_time
-

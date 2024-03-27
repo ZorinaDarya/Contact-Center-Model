@@ -1,15 +1,13 @@
 import datetime
 import warnings
-
-import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
 from constants import DATE, DURATION_POSTPROCESSING_BACK_CALL, DURATION_PREPROCESSING_BACK_CALL, DURATION_BACK_CALL, \
     DURATION_PREPROCESSING_INCOMING_CALL, DURATION_INCOMING_CALL, DURATION_POSTPROCESSING_INCOMING_CALL, \
     DURATION_PREPROCESSING_OUTGOING_CALL, DURATION_OUTGOING_CALL, DURATION_POSTPROCESSING_OUTGOING_CALL, \
-    OPERATOR_WAITING_BACK_CALL, OPERATOR_WAITING_OUTGOING_CALL
-from google_sheets import update_tasks_cur
+    OPERATOR_WAITING_BACK_CALL, OPERATOR_WAITING_OUTGOING_CALL, OPERATOR_COUNT, GROUP_MATRIX
+from google_sheets import update_tasks_cur, save_day
 from markup_functions import change_task_type, wait_duration_class, get_action_class, get_sorted_tasks, check_group, \
     get_operator_break, send_to_archive
 from model_initialization import init_model
@@ -57,14 +55,14 @@ def check_incoming_application_flow(moment):
         # model.tasks.loc[len(model.tasks.index)] = task
 
 
-def update_tasks(moment):
+def update_tasks(moment, d):
     model.tasks['Обработана'] = model.tasks.apply(send_to_archive, axis=1, moment=moment)
     model.tasks['Тип задачи'] = model.tasks.apply(change_task_type, axis=1, moment=moment)
     model.tasks['Длительность дозвона'] = model.tasks.apply(wait_duration_class, axis=1)
     model.tasks['Приоритет'] = model.tasks.apply(get_action_class, axis=1, classifier=model.classifier,
-                                                 moment=moment, param='Приоритет')
+                                                 moment=moment, param='Приоритет', d=d)
     model.tasks['Группа'] = model.tasks.apply(get_action_class, axis=1, classifier=model.classifier,
-                                              moment=moment, param='Группа')
+                                              moment=moment, param='Группа', d=d)
 
 
 def get_new_task(moment):
@@ -72,7 +70,7 @@ def get_new_task(moment):
     # & (model.tasks['Тип'] != 'Прочее')]
     active_tasks = unprocessed_tasks[unprocessed_tasks['Приоритет'] == unprocessed_tasks['Приоритет'].min()]
     if not active_tasks.empty:
-        new_task = get_sorted_tasks(active_tasks, moment)
+        new_task = get_sorted_tasks(active_tasks, moment, d)
         if not check_group(new_task, model, moment):
             new_task = None
     else:
@@ -80,10 +78,10 @@ def get_new_task(moment):
     return new_task
 
 
-def end_actions(moment):
+def end_actions(moment, d, oc):
     break_operators = model.operators[model.operators['Статус'] == 'Перерыв']
     for index, row in break_operators.iterrows():
-        operator_break, end_time = get_operator_break(index, moment, model.schedule)
+        operator_break, end_time = get_operator_break(index, moment, model.schedule, oc)
         if not operator_break:
             model.operators.loc[model.operators['Номер'] == index + 1, 'Статус'] = 'Свободен'
             model.operators.loc[model.operators['Номер'] == index + 1, 'Время последнего освобождения'] = moment
@@ -147,8 +145,8 @@ def end_actions(moment):
             if row['Тип задачи'] == 'Пропущенный':
                 callback_time = (row['Начало звонка'] -
                                  max(row['Дата и время'] + datetime.timedelta(seconds=int(row['Ожидание'])),
-                                     datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
-                if row['Дата и время'] >= datetime.datetime.combine(DATE, datetime.time(9, 0, 0)):
+                                     datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
+                if row['Дата и время'] >= datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)):
                     model.classifier.loc[(model.classifier['Направление'] == row['Тип задачи']) &
                                          (model.classifier['Тип'] == row['Тип']) &
                                          (model.classifier['Длительность дозвона'] == row['Длительность дозвона']) &
@@ -157,8 +155,8 @@ def end_actions(moment):
                                          (model.classifier['Конец'] > callback_time), 'Количество звонков'] += 1
             elif row['Тип задачи'] == 'Заявка':
                 callback_time = (row['Начало звонка'] - max(row['Дата и время'],
-                                 datetime.datetime.combine(DATE, datetime.time(9, 0, 0)))).total_seconds()
-                if row['Дата и время'] >= datetime.datetime.combine(DATE, datetime.time(9, 0, 0)):
+                                 datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
+                if row['Дата и время'] >= datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)):
                     model.classifier.loc[(model.classifier['Направление'] == 'Пропущенный') &
                                          (model.classifier['Тип'] == row['Тип']) &
                                          (model.classifier['Длительность дозвона'] == row['Длительность дозвона']) &
@@ -177,10 +175,10 @@ def end_actions(moment):
                               (model.actions['Начало звонка'] == row['Начало звонка']), 'Завершена'] = 'Да'
 
 
-def assign_tasks(moment):
+def assign_tasks(moment, oc):
     free_operators = model.operators[model.operators['Статус'] == 'Свободен']
     for index, row in free_operators.iterrows():
-        operator_break, end_time = get_operator_break(index, moment, model.schedule)
+        operator_break, end_time = get_operator_break(index, moment, model.schedule, oc)
         if operator_break:
             model.operators.loc[model.operators['Номер'] == index + 1, 'Статус'] = 'Перерыв'
             model.operators.loc[model.operators['Номер'] == index + 1, 'Время ближайшего освобождения'] = end_time
@@ -229,84 +227,89 @@ def assign_tasks(moment):
 
 
 if __name__ == '__main__':
-    a0 = datetime.datetime.now()
-    start_point = datetime.datetime.combine(DATE, datetime.time(9, 0, 0))
-    end_point = datetime.datetime.combine(DATE, datetime.time(21, 0, 0))
-    cur_time = start_point
+    for d in range(len(DATE)):
+        for m in range(len(GROUP_MATRIX)):
+            for oc in range(len(OPERATOR_COUNT)):
 
-    model = init_model()
+                a0 = datetime.datetime.now()
+                start_point = datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0))
+                end_point = datetime.datetime.combine(DATE[d], datetime.time(21, 0, 0))
+                cur_time = start_point
+                model = init_model(d, m, oc)
 
-    # Добавление пропущенных в нерабочее время в список задач
-    missed_calls_in_not_working_time(cur_time)
-    a1 = datetime.datetime.now()
-    while cur_time < end_point:
-        a2 = datetime.datetime.now()
-        if cur_time == datetime.datetime.combine(DATE, datetime.time(9, 41, 35)):
-            pass
+                # Добавление пропущенных в нерабочее время в список задач
+                missed_calls_in_not_working_time(cur_time)
+                a1 = datetime.datetime.now()
+                while cur_time < end_point:
+                    a2 = datetime.datetime.now()
+                    if cur_time == datetime.datetime.combine(DATE[d], datetime.time(9, 41, 35)):
+                        pass
 
-        # Определение какие события перешли в задачи
-        check_incoming_application_flow(cur_time)
+                    # Определение какие события перешли в задачи
+                    check_incoming_application_flow(cur_time)
 
-        # Изменение статусов задач: входящий/пропущенный, длительность дозвона, приоритет и группа, если появился второй
-        # необработанный пропущенный с одного номера, то первый пропущенный "не активный"
-        update_tasks(cur_time)
+                    # Изменение статусов задач: входящий/пропущенный, длительность дозвона, приоритет и группа, если появился второй
+                    # необработанный пропущенный с одного номера, то первый пропущенный "не активный"
+                    update_tasks(cur_time, d)
 
-        # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
-        end_actions(cur_time)
+                    # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
+                    end_actions(cur_time, d, oc)
 
-        # По всем активным задачам пройтись: выбрать задачу, определить доступна ли группа, создать действие,
-        # заполнить действие, изменить статус задачи, если есть еще
-        # необработанный пропущенный с одного номера, то этот пропущенный уходит в архив
+                    # По всем активным задачам пройтись: выбрать задачу, определить доступна ли группа, создать действие,
+                    # заполнить действие, изменить статус задачи, если есть еще
+                    # необработанный пропущенный с одного номера, то этот пропущенный уходит в архив
 
-        assign_tasks(cur_time)
-        # Если есть операторы в предобработке, то прерывать оператора, если есть входящий и
-        # заново начинать новую задачу
+                    assign_tasks(cur_time, oc)
+                    # Если есть операторы в предобработке, то прерывать оператора, если есть входящий и
+                    # заново начинать новую задачу
 
-        try:
-            cur_time = min([model.useful_points[model.useful_points['Дата и время'] > cur_time].iloc[0]['Дата и время'],
-                            end_point if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-                            model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
-                            end_point if pd.isnull(
-                                model.operators[model.operators['Статус'] != 'Свободен']
-                                ['Время ближайшего освобождения'].min(skipna=True))
-                            else model.operators[model.operators['Статус'] != 'Свободен']
-                            ['Время ближайшего освобождения'].min(skipna=True),
+                    try:
+                        cur_time = min([model.useful_points[model.useful_points['Дата и время'] > cur_time].iloc[0]['Дата и время'],
+                                        end_point if model.actions[model.actions['Начало звонка'] > cur_time].empty else
+                                        model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
+                                        end_point if pd.isnull(
+                                            model.operators[model.operators['Статус'] != 'Свободен']
+                                            ['Время ближайшего освобождения'].min(skipna=True))
+                                        else model.operators[model.operators['Статус'] != 'Свободен']
+                                        ['Время ближайшего освобождения'].min(skipna=True),
 
-                            datetime.datetime.combine(DATE, datetime.time(cur_time.hour + 1, 0, 0))])
-        except:
-            cur_time = end_point
-        print(cur_time, datetime.datetime.now() - a2)
+                                        datetime.datetime.combine(DATE[d], datetime.time(cur_time.hour + 1, 0, 0))])
+                    except:
+                        cur_time = end_point
+                    print(cur_time, datetime.datetime.now() - a2)
 
-    while not model.operators[model.operators['Статус'] != 'Свободен'].empty:
-        a2 = datetime.datetime.now()
-        # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
-        end_actions(cur_time)
+                while not model.operators[model.operators['Статус'] != 'Свободен'].empty:
+                    a2 = datetime.datetime.now()
+                    # Завершение действий операторов, проставление времен, изменение статусов задач,
+                    # изменение статусов операторов
+                    end_actions(cur_time, d,oc)
 
-        try:
-            cur_time = end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty \
-                else (model.operators[model.operators['Статус'] != 'Свободен']
-                      ['Время ближайшего освобождения'].min(skipna=True)
-                      if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-                      min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
-                          model.operators[model.operators['Статус'] != 'Свободен']
-                          ['Время ближайшего освобождения'].min(skipna=True)))
-        except:
-            cur_time = end_point
-        print(cur_time, datetime.datetime.now() - a2)
+                    try:
+                        cur_time = end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty \
+                            else (model.operators[model.operators['Статус'] != 'Свободен']
+                                  ['Время ближайшего освобождения'].min(skipna=True)
+                                  if model.actions[model.actions['Начало звонка'] > cur_time].empty else
+                                  min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
+                                      model.operators[model.operators['Статус'] != 'Свободен']
+                                      ['Время ближайшего освобождения'].min(skipna=True)))
+                    except:
+                        cur_time = end_point
+                    print(cur_time, datetime.datetime.now() - a2)
 
-    # Сбор статистики
+                # Сбор статистики
 
-    a3 = datetime.datetime.now()
-    update_tasks_cur(model.incoming_application_flow, 'Входные данные')
-    update_tasks_cur(model.tasks, 'Задачи')
-    update_tasks_cur(model.classifier, 'Классификатор')
-    update_tasks_cur(model.actions, 'Действия')
-    a4 = datetime.datetime.now()
+                a3 = datetime.datetime.now()
+                update_tasks_cur(model.incoming_application_flow, 'Входные данные')
+                update_tasks_cur(model.tasks, 'Задачи')
+                update_tasks_cur(model.classifier, 'Классификатор')
+                update_tasks_cur(model.actions, 'Действия')
+                a4 = datetime.datetime.now()
 
-    print('Загрузка входных данных: ', a1 - a0)
-    print('Выполнение процесса: ', a3 - a1)
-    print('Запись результатов: ', a4 - a3)
-    model.tasks['Ожидание'] = model.tasks['Ожидание'].astype(int)
+                print('Загрузка входных данных: ', a1 - a0)
+                print('Выполнение процесса: ', a3 - a1)
+                print('Запись результатов: ', a4 - a3)
+                model.tasks['Ожидание'] = model.tasks['Ожидание'].astype(int)
 
-    model.get_new_statistic(start_point, end_point)
-    update_tasks_cur(model.statistic, 'Выходные параметры (новые)')
+                model.get_new_statistic(start_point, end_point, oc)
+                update_tasks_cur(model.statistic, 'Выходные параметры (новые)')
+                save_day(DATE[d], OPERATOR_COUNT[oc], 'жм3_')

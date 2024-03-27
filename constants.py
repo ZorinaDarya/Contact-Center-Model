@@ -31,8 +31,6 @@ OPERATOR_WAITING_OUTGOING_CALL = 10
 # если бы оператор не взял трубку.
 PATIENT_WAITING = 30
 
-OPERATOR_COUNT = 3
-
 DEADLINE_BACK_CALL = 60 * 5
 
 COUNT_OUTGOING_CALL = 150
@@ -40,7 +38,20 @@ COUNT_OUTGOING_CALL = 150
 # AVAILABLE_ACTIONS_SELECTION_MODE = 'TIME'
 AVAILABLE_ACTIONS_SELECTION_MODE = 'FREE_OPERATOR'
 
-DATE = datetime.date(2024, 2, 29)
+OPERATOR_COUNT = [3, 4, 5, 6]
+DATE = [
+        datetime.date(2023, 11, 6)
+        # ,datetime.date(2023, 11, 7)
+        # ,datetime.date(2023, 11, 8)
+        # ,datetime.date(2023, 11, 9)
+        # ,datetime.date(2023, 11, 10)
+        # ,datetime.date(2023, 11, 13)
+        # ,datetime.date(2023, 11, 14)
+        # ,datetime.date(2023, 11, 15)
+        # ,datetime.date(2023, 11, 16)
+        # ,datetime.date(2023, 11, 17)
+        ]
+GROUP_MATRIX = ['A3:J17']
 
 GS_NAME = 'ТЗ для модели'
 

@@ -4,8 +4,8 @@ from data_transformation import matrix_to_df, available_groups_matrix_to_df, inp
 from models import Model
 
 
-def init_matrices():
-    values = get_matrices()
+def init_matrices(m):
+    values = get_matrices(m)
     df = matrix_to_df(values)
     return df
 
@@ -16,18 +16,18 @@ def init_available_groups_matrix():
     return df
 
 
-def init_input_data():
-    values = get_telephony()
+def init_input_data(d):
+    values = get_telephony(d)
     df = input_data_classification(values)
     return df
 
 
-def init_model():
-    classifier = init_matrices()
-    schedule = get_break_schedule()
+def init_model(d, m, oc):
+    classifier = init_matrices(m)
+    schedule = get_break_schedule(d)
     available_groups = init_available_groups_matrix()
-    input_data = init_input_data()
+    input_data = init_input_data(d)
 
-    model = Model(input_data, classifier, available_groups, schedule)
+    model = Model(input_data, classifier, available_groups, schedule, d, oc)
 
     return model
