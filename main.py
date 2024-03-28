@@ -4,7 +4,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from constants import DATE, DURATION_POSTPROCESSING_BACK_CALL, DURATION_PREPROCESSING_BACK_CALL, DURATION_BACK_CALL, \
-    DURATION_PREPROCESSING_INCOMING_CALL, DURATION_INCOMING_CALL, DURATION_POSTPROCESSING_INCOMING_CALL, \
+    DURATION_PREPROCESSING_INCOMING_CALL, DURATION_POSTPROCESSING_INCOMING_CALL, \
     DURATION_PREPROCESSING_OUTGOING_CALL, DURATION_OUTGOING_CALL, DURATION_POSTPROCESSING_OUTGOING_CALL, \
     OPERATOR_WAITING_BACK_CALL, OPERATOR_WAITING_OUTGOING_CALL, OPERATOR_COUNT, GROUP_MATRIX
 from google_sheets import update_tasks_cur, save_day
@@ -155,8 +155,7 @@ def end_actions(moment, d, oc):
                                          (model.classifier['Конец'] > callback_time), 'Количество звонков'] += 1
             elif row['Тип задачи'] == 'Заявка':
                 callback_time = (row['Начало звонка'] - max(row['Дата и время'],
-                                                            datetime.datetime.combine(DATE[d], datetime.time(9, 0,
-                                                                                                             0)))).total_seconds()
+                                 datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
                 if row['Дата и время'] >= datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)):
                     model.classifier.loc[(model.classifier['Направление'] == 'Пропущенный') &
                                          (model.classifier['Тип'] == row['Тип']) &
@@ -190,8 +189,8 @@ def assign_tasks(moment, oc):
             else:
                 if new_task['Тип задачи'] in ['Пропущенный', 'Заявка']:
                     preprocessing = DURATION_PREPROCESSING_BACK_CALL
-                    call = int((DURATION_BACK_CALL if new_task['Факт'] == 'Пропущен' else new_task['Разговор']) + \
-                           OPERATOR_WAITING_BACK_CALL)
+                    call = int((DURATION_BACK_CALL if new_task['Факт'] == 'Пропущен' else new_task['Разговор']) +
+                               OPERATOR_WAITING_BACK_CALL)
                     postprocessing = DURATION_POSTPROCESSING_BACK_CALL
                 elif new_task['Тип задачи'] == 'Входящий':
                     preprocessing = DURATION_PREPROCESSING_INCOMING_CALL
@@ -250,16 +249,17 @@ if __name__ == '__main__':
                     # Определение какие события перешли в задачи
                     check_incoming_application_flow(cur_time)
 
-                    # Изменение статусов задач: входящий/пропущенный, длительность дозвона, приоритет и группа, если появился второй
-                    # необработанный пропущенный с одного номера, то первый пропущенный "не активный"
+                    # Изменение статусов задач: входящий/пропущенный, длительность дозвона, приоритет и группа, если
+                    # появился второй необработанный пропущенный с одного номера, то первый пропущенный "не активный"
                     update_tasks(cur_time, d)
 
-                    # Завершение действий операторов, проставление времен, изменение статусов задач, изменение статусов операторов
+                    # Завершение действий операторов, проставление времен, изменение статусов задач,
+                    # изменение статусов операторов
                     end_actions(cur_time, d, oc)
 
-                    # По всем активным задачам пройтись: выбрать задачу, определить доступна ли группа, создать действие,
-                    # заполнить действие, изменить статус задачи, если есть еще
-                    # необработанный пропущенный с одного номера, то этот пропущенный уходит в архив
+                    # По всем активным задачам пройтись: выбрать задачу, определить доступна ли группа, создать
+                    # действие, заполнить действие, изменить статус задачи, если есть еще необработанный пропущенный с
+                    # одного номера, то этот пропущенный уходит в архив
 
                     assign_tasks(cur_time, oc)
                     # Если есть операторы в предобработке, то прерывать оператора, если есть входящий и
@@ -278,7 +278,7 @@ if __name__ == '__main__':
                                         ['Время ближайшего освобождения'].min(skipna=True),
 
                                         datetime.datetime.combine(DATE[d], datetime.time(cur_time.hour + 1, 0, 0))])
-                    except:
+                    except IndexError:
                         cur_time = end_point
                     print(cur_time, datetime.datetime.now() - a2)
 
@@ -297,7 +297,7 @@ if __name__ == '__main__':
                                       skipna=True),
                                       model.operators[model.operators['Статус'] != 'Свободен']
                                       ['Время ближайшего освобождения'].min(skipna=True)))
-                    except:
+                    except IndexError:
                         cur_time = end_point
                     print(cur_time, datetime.datetime.now() - a2)
 
