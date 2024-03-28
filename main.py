@@ -155,7 +155,8 @@ def end_actions(moment, d, oc):
                                          (model.classifier['Конец'] > callback_time), 'Количество звонков'] += 1
             elif row['Тип задачи'] == 'Заявка':
                 callback_time = (row['Начало звонка'] - max(row['Дата и время'],
-                                 datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)))).total_seconds()
+                                                            datetime.datetime.combine(DATE[d], datetime.time(9, 0,
+                                                                                                             0)))).total_seconds()
                 if row['Дата и время'] >= datetime.datetime.combine(DATE[d], datetime.time(9, 0, 0)):
                     model.classifier.loc[(model.classifier['Направление'] == 'Пропущенный') &
                                          (model.classifier['Тип'] == row['Тип']) &
@@ -188,16 +189,17 @@ def assign_tasks(moment, oc):
                 break
             else:
                 if new_task['Тип задачи'] in ['Пропущенный', 'Заявка']:
-                    preprocessing = DURATION_PREPROCESSING_BACK_CALL + OPERATOR_WAITING_BACK_CALL
-                    call = DURATION_BACK_CALL
+                    preprocessing = DURATION_PREPROCESSING_BACK_CALL
+                    call = int((DURATION_BACK_CALL if new_task['Факт'] == 'Пропущен' else new_task['Разговор']) + \
+                           OPERATOR_WAITING_BACK_CALL)
                     postprocessing = DURATION_POSTPROCESSING_BACK_CALL
                 elif new_task['Тип задачи'] == 'Входящий':
                     preprocessing = DURATION_PREPROCESSING_INCOMING_CALL
-                    call = DURATION_INCOMING_CALL
+                    call = int(new_task['Разговор'])
                     postprocessing = DURATION_POSTPROCESSING_INCOMING_CALL
                 else:
-                    preprocessing = DURATION_PREPROCESSING_OUTGOING_CALL + OPERATOR_WAITING_OUTGOING_CALL
-                    call = DURATION_OUTGOING_CALL
+                    preprocessing = DURATION_PREPROCESSING_OUTGOING_CALL
+                    call = DURATION_OUTGOING_CALL + OPERATOR_WAITING_OUTGOING_CALL
                     postprocessing = DURATION_POSTPROCESSING_OUTGOING_CALL
 
                 action = DataFrame([[
@@ -264,9 +266,11 @@ if __name__ == '__main__':
                     # заново начинать новую задачу
 
                     try:
-                        cur_time = min([model.useful_points[model.useful_points['Дата и время'] > cur_time].iloc[0]['Дата и время'],
+                        cur_time = min([model.useful_points[model.useful_points['Дата и время'] > cur_time].iloc[0][
+                                            'Дата и время'],
                                         end_point if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-                                        model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
+                                        model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(
+                                            skipna=True),
                                         end_point if pd.isnull(
                                             model.operators[model.operators['Статус'] != 'Свободен']
                                             ['Время ближайшего освобождения'].min(skipna=True))
@@ -282,14 +286,15 @@ if __name__ == '__main__':
                     a2 = datetime.datetime.now()
                     # Завершение действий операторов, проставление времен, изменение статусов задач,
                     # изменение статусов операторов
-                    end_actions(cur_time, d,oc)
+                    end_actions(cur_time, d, oc)
 
                     try:
                         cur_time = end_point if model.operators[model.operators['Статус'] != 'Свободен'].empty \
                             else (model.operators[model.operators['Статус'] != 'Свободен']
                                   ['Время ближайшего освобождения'].min(skipna=True)
                                   if model.actions[model.actions['Начало звонка'] > cur_time].empty else
-                                  min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(skipna=True),
+                                  min(model.actions[model.actions['Начало звонка'] > cur_time]['Начало звонка'].min(
+                                      skipna=True),
                                       model.operators[model.operators['Статус'] != 'Свободен']
                                       ['Время ближайшего освобождения'].min(skipna=True)))
                     except:
@@ -312,4 +317,4 @@ if __name__ == '__main__':
 
                 model.get_new_statistic(start_point, end_point, oc)
                 update_tasks_cur(model.statistic, 'Выходные параметры (новые)')
-                save_day(DATE[d], OPERATOR_COUNT[oc], 'жм3_')
+                save_day(DATE[d], OPERATOR_COUNT[oc], 'жм1.5')
